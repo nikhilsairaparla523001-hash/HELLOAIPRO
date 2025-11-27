@@ -1,113 +1,136 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { type ChatMessage } from '../types';
+import React, { useEffect, useState, useMemo } from 'react';
+import { type ChatMessage, type Source } from '../types';
 import { marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js';
+
+// Configure marked to use highlight.js
+marked.use(markedHighlight({
+  langPrefix: 'hljs language-',
+  highlight(code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+    return hljs.highlight(code, { language }).value;
+  }
+}));
 
 interface MessageProps {
     message: ChatMessage;
+    isLoading?: boolean;
+    isLastMessage?: boolean;
 }
 
-const UserIcon: React.FC = () => (
+const UserIcon = () => (
     <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white flex-shrink-0">
         U
     </div>
 );
 
-const AiIcon: React.FC = () => (
-    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center font-bold text-white flex-shrink-0">
-        AI
+const AiIcon = () => (
+    <div className="w-8 h-8 bg-gradient-to-tr from-green-400 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+        </svg>
     </div>
 );
 
-const PdfIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 text-red-400 flex-shrink-0">
-        <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a.375.375 0 0 1-.375-.375V6.75A3.75 3.75 0 0 0 9 3H5.625Z" />
-        <path d="M12.971 1.816A5.23 5.23 0 0 1 15.75 1.5h1.875a.375.375 0 0 1 .375.375v4.5a.375.375 0 0 1-.375.375h-4.5a.375.375 0 0 1-.375-.375v-1.125a.375.375 0 0 1 .214-.342l2.582-1.418a.375.375 0 0 0 .16-.317V1.816Z" />
-    </svg>
-);
-
-
 const FilePreview: React.FC<{ file: File }> = ({ file }) => {
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const fileType = file.type.split('/')[0];
-    const isPdf = file.type === 'application/pdf';
+    const url = useMemo(() => URL.createObjectURL(file), [file]);
 
-    useEffect(() => {
-        let objectUrl: string | null = null;
-        if (file && !isPdf) {
-            objectUrl = URL.createObjectURL(file);
-            setPreviewUrl(objectUrl);
-        }
-
-        return () => {
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-            }
-        };
-    }, [file, isPdf]);
-
-    if (fileType === 'image' && previewUrl) {
-        return <img src={previewUrl} alt="File preview" className="mt-2 rounded-lg max-w-xs max-h-48 object-cover" />;
+    if (file.type.startsWith('image/')) {
+        return <img src={url} alt={file.name} className="max-w-xs max-h-64 rounded-lg mt-2" />;
     }
-    if (fileType === 'video' && previewUrl) {
-        return <video src={previewUrl} controls className="mt-2 rounded-lg max-w-xs max-h-60" />;
+    if (file.type.startsWith('video/')) {
+        return <video src={url} controls className="max-w-xs rounded-lg mt-2" />;
     }
-    if (fileType === 'audio' && previewUrl) {
-        return <audio src={previewUrl} controls className="mt-2 w-full max-w-xs" />;
+    if (file.type.startsWith('audio/')) {
+        return <audio src={url} controls className="mt-2" />;
     }
-    if (isPdf) {
+    if (file.type === 'application/pdf') {
         return (
-            <div className="mt-2 p-3 rounded-lg bg-gray-700/50 flex items-center gap-3 max-w-xs border border-gray-600">
-                <PdfIcon />
-                <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-medium text-gray-200 truncate">{file.name}</p>
-                    <p className="text-xs text-gray-400">{Math.round(file.size / 1024)} KB</p>
-                </div>
+            <div className="mt-2 p-2 bg-gray-700 rounded-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <span className="text-sm truncate">{file.name}</span>
             </div>
         );
     }
-    return null;
+    return <div className="mt-2 text-sm text-gray-400">File: {file.name}</div>;
 };
 
+const Sources: React.FC<{ sources: Source[] }> = ({ sources }) => (
+    <div className="mt-4 pt-2 border-t border-gray-700">
+        <h4 className="text-xs font-semibold text-gray-400 mb-2">Sources:</h4>
+        <div className="flex flex-wrap gap-2">
+            {sources.map((source, index) => (
+                <a
+                    key={index}
+                    href={source.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gray-700 hover:bg-gray-600 text-cyan-400 text-xs px-2 py-1 rounded-md transition-colors truncate"
+                    title={source.title}
+                >
+                    {new URL(source.uri).hostname}
+                </a>
+            ))}
+        </div>
+    </div>
+);
 
-export const Message: React.FC<MessageProps> = ({ message }) => {
-    const isUser = message.sender === 'user';
-    
-    const parsedHtml = useMemo(() => 
-        marked.parse(message.text || '', { gfm: true, breaks: true })
-    , [message.text]);
+
+export const Message: React.FC<MessageProps> = ({ message, isLoading, isLastMessage }) => {
+    const [htmlContent, setHtmlContent] = useState('');
+    const isError = message.sender === 'ai' && message.text.startsWith('Error:');
+
+    useEffect(() => {
+        if (message.sender === 'ai' && message.text) {
+             const parseMarkdown = async () => {
+                const html = await marked.parse(message.text) as string;
+                setHtmlContent(html);
+             };
+             parseMarkdown();
+        } else {
+            setHtmlContent('');
+        }
+    }, [message.text, message.sender]);
+
+    const showTypingIndicator = isLoading && isLastMessage && message.sender === 'ai' && message.text.length === 0;
+    const showTypingCursor = isLoading && isLastMessage && message.sender === 'ai' && message.text.length > 0;
 
     return (
-        <div className="max-w-3xl mx-auto flex gap-4 items-start">
+        <div className="max-w-3xl mx-auto flex items-start gap-4">
             <div className="flex-shrink-0">
-                {isUser ? <UserIcon /> : <AiIcon />}
+                {message.sender === 'user' ? <UserIcon /> : <AiIcon />}
             </div>
-            <div className={`flex-1 pt-1 overflow-x-auto`}>
-                <div className="font-bold mb-1">{isUser ? "You" : "NewGpt.Ai"}</div>
+            <div className="flex-grow pt-1 min-w-0">
+                <p className="font-bold text-gray-200">
+                    {message.sender === 'user' ? 'You' : 'NewGpt.Ai'}
+                </p>
+
                 {message.file && <FilePreview file={message.file} />}
-                <div
-                    className="prose prose-invert max-w-none prose-p:my-2 prose-headings:my-3" 
-                    dangerouslySetInnerHTML={{ __html: parsedHtml as string }}
-                />
-                {message.sources && message.sources.length > 0 && (
-                    <div className="mt-4 border-t border-gray-700 pt-3">
-                        <h4 className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
-                                <path fillRule="evenodd" d="M8.5 2a.5.5 0 0 0-1 0v8.25a.75.75 0 0 1-1.5 0V3.5a2 2 0 1 0-4 0v9.5A3.5 3.5 0 0 0 5.5 16.5a3.5 3.5 0 0 0 3.5-3.5V2ZM5 3.5a.5.5 0 0 0-1 0v9.5a2 2 0 0 0 2 2 .5.5 0 0 1 0-1 1 1 0 0 1-1-1V3.5Z" clipRule="evenodd" />
-                            </svg>
-                            Sources
-                        </h4>
-                        <ol className="list-none p-0 m-0 space-y-2">
-                            {message.sources.map((source, index) => (
-                                <li key={index} className="flex items-start text-sm gap-2">
-                                    <span className="bg-gray-700 text-gray-300 w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full text-xs">{index + 1}</span>
-                                    <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline break-all" title={source.title}>
-                                        {source.title}
-                                    </a>
-                                </li>
-                            ))}
-                        </ol>
+
+                {message.sender === 'user' ? (
+                    <p className="text-gray-200 whitespace-pre-wrap">{message.text}</p>
+                ) : (
+                    <div className="flex items-center">
+                        <div
+                            className={`prose prose-invert prose-sm max-w-none ${isError ? 'text-red-400' : ''}`}
+                            dangerouslySetInnerHTML={{ __html: htmlContent }}
+                        />
+                        {showTypingCursor && (
+                            <span className="inline-block w-2 h-5 bg-cyan-400 animate-pulse ml-1" />
+                        )}
                     </div>
                 )}
+                
+                {showTypingIndicator && (
+                     <div className="flex items-center gap-1">
+                        <span className="inline-block w-2 h-5 bg-cyan-400 animate-pulse" />
+                    </div>
+                )}
+
+                {!isLoading && message.sources && message.sources.length > 0 && <Sources sources={message.sources} />}
             </div>
         </div>
     );
