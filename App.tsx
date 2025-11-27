@@ -15,6 +15,7 @@ const App: React.FC = () => {
     const [ai, setAi] = useState<GoogleGenAI | null>(null);
     const [chat, setChat] = useState<Chat | null>(null);
     const [chatMode, setChatMode] = useState<ChatMode>('search');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const chatWindowRef = useRef<HTMLDivElement>(null);
 
     const getChatConfigForMode = (mode: ChatMode) => {
@@ -133,9 +134,16 @@ const App: React.FC = () => {
     
     return (
         <div className="flex h-screen bg-gray-900 text-gray-100 font-sans">
-            <Sidebar onNewChat={handleNewChat} />
+            <Sidebar onNewChat={handleNewChat} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
             <div className="flex-1 flex flex-col relative">
-                <main ref={chatWindowRef} className="flex-1 overflow-y-auto pt-8">
+                <div className="md:hidden absolute top-2 left-2 z-20">
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                    </button>
+                </div>
+                <main ref={chatWindowRef} className="flex-1 overflow-y-auto pt-14 md:pt-8">
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center px-4">
                              <div className="w-16 h-16 bg-gradient-to-tr from-green-400 to-cyan-500 rounded-full mb-6 flex items-center justify-center">
@@ -146,7 +154,7 @@ const App: React.FC = () => {
                              <h1 className="text-2xl font-semibold text-gray-200">How can I help you today?</h1>
                         </div>
                     ) : (
-                         <ChatWindow messages={messages} />
+                         <ChatWindow messages={messages} isLoading={isLoading} />
                     )}
                 </main>
                 <div className="w-full px-4 md:px-6 py-4 bg-gray-900">
