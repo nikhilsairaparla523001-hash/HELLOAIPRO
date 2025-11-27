@@ -41,6 +41,7 @@ export const generateResponse = async (
         parts.push({ text: prompt });
     }
     
+    // FIX: chat.sendMessageStream expects an object with a `message` property.
     const stream = await chat.sendMessageStream({ message: parts });
     
     const collectedSources: { [uri: string]: Source } = {};
