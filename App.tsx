@@ -42,6 +42,7 @@ const App: React.FC = () => {
     };
 
     useEffect(() => {
+        // FIX: Per coding guidelines, the API key must be obtained from `process.env.API_KEY`.
         const apiKey = process.env.API_KEY;
         if (apiKey) {
             setAi(new GoogleGenAI({ apiKey }));
