@@ -1,0 +1,5 @@
+{
+  "name": "HELLOAI",
+  "description": "An all-in-one AI chat interface providing access to a wide range of models from Gemini, OpenAI, and Anthropic for text, image, and video generation. Features include file uploads, model selection, and a familiar chat experience.",
+  "requestFramePermissions": []
+}
